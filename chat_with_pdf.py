@@ -9,7 +9,7 @@ client = OpenAI(
 )
 
 st.title("📝 File Q&A with OpenAI")
-uploaded_file = st.file_uploader("Upload an article", type=("txt", "md"))
+uploaded_file = st.file_uploader("Upload a .txt file", type=("txt",))
 
 question = st.chat_input(
     "Ask something about the article",
@@ -17,13 +17,13 @@ question = st.chat_input(
 )
 
 if "messages" not in st.session_state:
-    st.session_state["messages"] = [{"role": "assistant", "content": "Ask something about the article"}]
+    st.session_state["messages"] = [{"role": "assistant", "content": "Upload a .txt file and ask a question."}]
 
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
 
 if question and uploaded_file:
-    # Read the content of the uploaded file
+    # Read uploaded .txt file
     file_content = uploaded_file.read().decode("utf-8")
     print(file_content)
 
@@ -33,7 +33,7 @@ if question and uploaded_file:
 
     with st.chat_message("assistant"):
         stream = client.chat.completions.create(
-            model="gpt-4o",  # Change this to a valid model name
+            model="openai.gpt-4o",  # Change this to a valid model name
             messages=[
                 {"role": "system", "content": f"Here's the content of the file:\n\n{file_content}"},
                 *st.session_state.messages
