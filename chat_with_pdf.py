@@ -4,7 +4,7 @@ from openai import OpenAI
 from os import environ
 import tempfile 
 
-from langchain_community.document_loaders import TextLoader
+from langchain_community.document_loaders import TextLoader, PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from langchain_chroma import Chroma
@@ -16,12 +16,12 @@ client = OpenAI(
 
 st.title("📝 File Q&A with OpenAI")
 
-# Allow multiple files
-uploaded_files = st.file_uploader("Upload a .txt file", type=("txt",), accept_multiple_files=True)
+# Allow multiple files  
+uploaded_files = st.file_uploader("Upload a .txt or .pdf files", type=("txt","pdf"), accept_multiple_files=True)
 
 # RAG 3.1 Document Ingestion and Chunking
 @st.cache_resource(show_spinner="Processing document(s)...")
-def get_retriever(_uploaded_files):
+def get_retriever(cache_key, _uploaded_files):
     """
     Loads, splits, embeds, and indexes the uploaded documents.
     Returns a Chroma retriever object.
@@ -35,8 +35,14 @@ def get_retriever(_uploaded_files):
             with open(temp_path, "wb") as f:
                 f.write(uploaded_file.getvalue())
 
-            # Load the document using TextLoader
-            loader = TextLoader(temp_path)
+            # Load the document depending on file type
+            if temp_path.endswith(".pdf"):
+                loader = PyPDFLoader(temp_path)
+            elif temp_path.endswith(".txt"):
+                loader = TextLoader(temp_path)
+            else:
+                st.warning(f"Skipping unsupported file: {uploaded_file.name}")
+                continue
             all_docs.extend(loader.load())
 
     if not all_docs:
@@ -65,7 +71,8 @@ def get_retriever(_uploaded_files):
 # Initialize retriever outside the chat logic
 retriever = None
 if uploaded_files:
-    retriever = get_retriever(uploaded_files)
+    file_key = " ".join([f"{f.name}-{f.size}" for f in uploaded_files])
+    retriever = get_retriever(file_key, uploaded_files)
 else:
     st.cache_resource.clear() # clear cache if no files uploaded
 
@@ -73,20 +80,18 @@ else:
 # ---------- Chat Flow ----------
 
 question = st.chat_input(
-    "Ask something about the article",
+    "Ask something about the document(s)",
     disabled=not retriever,
 )
 
 if "messages" not in st.session_state:
-    st.session_state["messages"] = [{"role": "assistant", "content": "Upload a .txt file and ask a question."}]
+    st.session_state["messages"] = [{"role": "assistant", "content": "Upload a .txt or .pdf file(s) and ask a question."}]
 
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
 
 if question and retriever:
     # RAG 3.2
-    # file_content = uploaded_files.read().decode("utf-8")
-    # print(file_content)
 
     # Append the user's question to the messages
     st.session_state.messages.append({"role": "user", "content": question})
@@ -97,6 +102,9 @@ if question and retriever:
         # 1. Retrieve and get relevant documents from Chroma
         with st.spinner("Retrieving relevant context..."):
             retrieved_docs = retriever.invoke(question)
+        
+        # st.json([doc.metadata for doc in retrieved_docs]) # Check if it is differentiating between different docs
+
         # 2. Augment 
         context_string = "\n\n---\n\n".join([doc.page_content for doc in retrieved_docs])
         # 3. Create RAG prompt
