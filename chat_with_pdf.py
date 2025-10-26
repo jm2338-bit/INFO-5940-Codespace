@@ -110,7 +110,7 @@ if question and retriever:
         # 3. Create RAG prompt
         rag_system_prompt = f"""
         You are an assistant for question-answering tasks.
-        Use ONLY the following pieces of retrieved context to answer the question.
+        Use only the following pieces of retrieved context to answer the question.
         If you don't know the answer, just say that you don't know.
         Keep the answer concise (three sentences maximum).
 

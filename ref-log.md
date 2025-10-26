@@ -1,6 +1,16 @@
-# Assignment 1 - Change Log
+# Assignment 1 - Reference Log
 
-## 2025-10-25
+This log documents the external tools and generative AI used in this project.
 
-* **Issue:** Encountered `ValueError: numpy.dtype size changed, may indicate binary incompatibility` when running the Streamlit app.
-* **Fix:** Explicitly added `numpy==1.26.4` to `requirements.txt` to pin the version. Re-ran `pip install -r requirements.txt` to apply the fix.
+## External Sources & Tools
+
+* **Streamlit:** Used to build the web chat interface.
+* **OpenAI API:** Used for the chat and embedding models.
+* **LangChain:** Used to load documents, split text, and create embeddings.
+* **ChromaDB:** Used as the vector database to store document chunks.
+* **GitHub Codespaces:** The development environment used for coding and testing.
+
+## Generative AI Usage
+
+* **Tool:** Gemini
+    * Used Gemini to summarize for the README and ref-log files.
